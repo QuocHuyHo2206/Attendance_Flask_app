@@ -1,0 +1,166 @@
+import sqlite3
+from flask import make_response, jsonify
+from datetime import datetime, timedelta
+
+class teacher_handler():
+    def __init__(self):
+        #Connection establishment code
+        try:
+            # self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+            # self.con.row_factory = sqlite3.Row
+            # self.cur = self.con.cursor()
+            print("Connection successful")        
+        except:
+            print("Some error")
+
+    #login
+    def teacher_login_handler(self, data):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        self.cur.execute(f"SELECT * FROM teachers where email = '{data['email']}' and password = '{data['password']}'")
+        teacher = self.cur.fetchone()
+        self.con.close()
+        if teacher:
+            teacher_id = teacher[0]
+            return make_response(jsonify({
+            "message": "login successfully",
+            "teacher_id": teacher_id
+        }), 200)
+        else:
+            return make_response({"message":"login fail"}, 404)
+        
+    #"2025-10-15 08:30:00"
+    def add_new_session_handler(self, data):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        self.cur.execute(f"INSERT INTO sessions(title, numberofstudent, startdate, enddate, teacher_id) values( '{data['title']}', 0, '{data['startdate']}', '{data['enddate']}', {data['teacher_id']})")
+        self.con.commit()
+        session_id = self.cur.lastrowid
+        self.con.close()
+        return make_response(jsonify({
+        "message": "create successfully",
+        "session_id": session_id
+        }), 200)
+
+    #title, start, end
+    def update_session_handler(self, id, data):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        query = "UPDATE sessions set "
+        for key in data:
+            query += f"{key}='{data[key]}',"
+        query = query[:-1] + f"WHERE id = {id}"
+        self.cur.execute(query)
+        if self.cur.rowcount > 0:
+            self.con.commit()
+            self.con.close()
+            return make_response(jsonify({"message":"session updated successfully"}), 200)
+        else:
+            self.con.close()
+            return make_response(jsonify({"message":"Nothing to update"}), 202)
+        
+    #api lấy student danh sách students để có thể thêm attendance
+    # def add_student_to_session_handler(self, data):
+    #     self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+    #     self.con.row_factory = sqlite3.Row
+    #     self.cur = self.con.cursor()
+
+    #     query = """
+    #         SELECT 1 FROM attendance
+    #         WHERE session_id = ? AND student_id = ? """
+    #     self.cur.execute(query, (data['session_id'], data['student_id']))
+    #     exists = self.cur.fetchone()
+    #     if exists:
+    #         self.con.close()
+    #         return make_response(jsonify({"error": "Student already added to this session"}), 400)
+
+    #     self.cur.execute(f"INSERT INTO attendance(session_id, student_id, status, checkin_time) values({data['session_id']}, {data['student_id']}, 'absent', NULL)")
+    #     self.con.commit()
+    #     self.cur.execute(f"UPDATE sessions set numberofstudent = numberofstudent + 1 where id = {data['session_id']}")
+    #     self.con.commit()
+    #     self.con.close()
+    #     return make_response(jsonify({"message":"add student successfully"}), 200)
+
+    def add_student_to_session_handler(self, data):
+        try:
+            con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+            con.row_factory = sqlite3.Row
+            cur = con.cursor()
+
+            cur.execute(
+            "SELECT 1 FROM attendance WHERE session_id = ? AND student_id = ?",
+            (data['session_id'], data['student_id']))   
+
+            if cur.fetchone():
+                return make_response(jsonify({"error": "Student already added to this session"}), 400)
+
+            cur.execute(
+            "INSERT INTO attendance(session_id, student_id, status, checkin_time) VALUES (?, ?, 'absent', NULL)",
+            (data['session_id'], data['student_id']))
+
+            cur.execute(
+            "UPDATE sessions SET numberofstudent = COALESCE(numberofstudent, 0) + 1 WHERE id = ?",
+            (data['session_id'],))
+
+            con.commit()
+            return make_response(jsonify({"message": "add student successfully"}), 200)
+
+        except sqlite3.OperationalError as e:
+            print("SQLite error:", e)
+            return make_response(jsonify({"error": f"Database error: {str(e)}"}), 500)
+
+        finally:
+            try:
+                con.close()
+            except:
+                pass
+    
+    #get all student
+    def get_all_student_handler(self):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        query = "Select id, name, email from students"
+        self.cur.execute(query)
+        result = [dict(row) for row in self.cur.fetchall()]
+        self.con.close()
+        return make_response(jsonify(result), 200)
+    
+    #get all session
+    def get_all_session_handler(self):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        query = "Select * from sessions"
+        self.cur.execute(query)
+        result = [dict(row) for row in self.cur.fetchall()]
+        self.con.close()
+        return make_response(jsonify(result), 200)
+    
+    #get number of present/absent theo session_id
+    def get_num_stu_followed_categories_endpoint(self, id):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        query = f"Select status from attendance where session_id = {id}"
+        self.cur.execute(query)
+        statuses = self.cur.fetchall()
+        self.con.close()
+        num_present = 0
+        num_absent = 0
+        for item in statuses:
+            if item == 'present':
+                num_present = num_present + 1
+            else:
+                num_absent = num_absent + 1
+        return make_response(jsonify({'num_present': num_present, 'num_absent': num_absent}))
+    
