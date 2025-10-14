@@ -158,9 +158,9 @@ class teacher_handler():
         num_present = 0
         num_absent = 0
         for item in statuses:
-            if item == 'present':
-                num_present = num_present + 1
+            if item['status'] == 'present':
+                num_present += 1
             else:
-                num_absent = num_absent + 1
+                num_absent += 1
         return make_response(jsonify({'num_present': num_present, 'num_absent': num_absent}))
     
