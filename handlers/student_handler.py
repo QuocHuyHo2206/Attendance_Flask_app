@@ -73,6 +73,7 @@ class student_handler():
         self.con.row_factory = sqlite3.Row
         self.cur = self.con.cursor()
         file = data.files['image']
+        session_id = data.form.get('session_id')
 
         img = face_recognition.load_image_file(file)
         encodings = face_recognition.face_encodings(img)
@@ -93,9 +94,20 @@ class student_handler():
                 student_info = self.cur.fetchone()
                 
                 checkin_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                self.cur.execute(
-                    f"UPDATE attendance SET status = 'present', checkin_time = '{checkin_time}' "
-                    f"WHERE session_id = {data.form['session_id']} AND student_id = {item[0]}")
+                
+                self.cur.execute(f"SELECT * FROM attendance WHERE session_id = {session_id} AND student_id = {item[0]}")
+                existing_record = self.cur.fetchone()
+                
+                if existing_record:
+                    # Update existing record
+                    self.cur.execute(
+                        f"UPDATE attendance SET status = 'present', checkin_time = '{checkin_time}' "
+                        f"WHERE session_id = {session_id} AND student_id = {item[0]}")
+                else:
+                    # Create new record
+                    self.cur.execute(
+                        f"INSERT INTO attendance (session_id, student_id, status, checkin_time) "
+                        f"VALUES ({session_id}, {item[0]}, 'present', '{checkin_time}')")
                 
                 self.con.commit()
                 self.con.close()
