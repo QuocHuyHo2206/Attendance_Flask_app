@@ -145,9 +145,36 @@ class teacher_handler():
 
         query = "Select * from sessions"
         self.cur.execute(query)
-        result = [dict(row) for row in self.cur.fetchall()]
+        list_of_session = [dict(row) for row in self.cur.fetchall()]
+
+
+        for session in list_of_session:
+            session_id = session['id']
+            query = "SELECT status FROM attendance WHERE session_id = ?"
+            self.cur.execute(query, (session_id,))
+            statuses = self.cur.fetchall()
+
+            num_present = 0
+            num_absent = 0
+
+            for item in statuses:
+                if item['status'] == 'present':
+                    num_present += 1
+                else:
+                    num_absent += 1
+
+            total = num_present + num_absent
+            if total > 0:
+                percentage_of_attendance = (num_present / total) * 100
+            else:
+                percentage_of_attendance = 0
+
+            session['percentage_of_attendance'] = round(percentage_of_attendance, 1)
+            
         self.con.close()
-        return make_response(jsonify(result), 200)
+
+        return make_response(jsonify({"payload": list_of_session}), 200)
+
     
     #get number of present/absent theo session_id
     def get_num_stu_followed_categories_endpoint(self, id):
