@@ -24,12 +24,16 @@ class teacher_handler():
         self.con.close()
         if teacher:
             teacher_id = teacher[0]
+            teacher_name = teacher[1]
+            teacher_email = teacher[2]
             return make_response(jsonify({
-            "message": "login successfully",
-            "teacher_id": teacher_id
+                "message": "login successfully",
+                "teacher_id": teacher_id,
+                "teacher_name": teacher_name,
+                "teacher_email": teacher_email
         }), 200)
         else:
-            return make_response({"message":"login fail"}, 404)
+            return make_response(jsonify({"message":"login fail"}), 404)
         
     #"2025-10-15 08:30:00"
     def add_new_session_handler(self, data):
