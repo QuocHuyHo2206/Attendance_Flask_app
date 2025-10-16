@@ -24,9 +24,9 @@ def add_student_to_session_endpoint():
 def get_all_student_endpoint():
     return tea.get_all_student_handler()
 
-@app.route("/api/teacher/getallsession", methods=['GET'])
-def get_all_session_endpoint():
-    return tea.get_all_session_handler()
+@app.route("/api/teacher/getallsession/<startdate>", methods=['GET'])
+def get_all_session_endpoint(startdate):
+    return tea.get_all_session_handler(startdate)
 
 @app.route("/api/teacher/getnumstufollowedcategories/<id>", methods=['GET'])
 def get_num_stu_followed_categories_endpoint(id):

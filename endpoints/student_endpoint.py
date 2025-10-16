@@ -16,6 +16,10 @@ def student_register_endpoint():
 def student_take_attendance_endpoint():
     return stu.student_take_attendance_handler(request)
 
-@app.route("/api/student/getsessioninformation/<id>")
-def get_session_information_endpoint(id):
-    return stu.get_session_information_handler(id)
+@app.route("/api/student/getsessioninformation/<id>/<startdate>")
+def get_session_information_endpoint(id, startdate):
+    return stu.get_session_information_handler(id, startdate)
+
+@app.route("/api/student/getstudentinformation/<id>")
+def get_student_information_endpoint(id):
+    return stu.get_student_information_handler(id)

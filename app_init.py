@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Allow Next.js dev servers
 CORS(
     app,
-    resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}},
+    resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "https://attendance-system-eight-kappa.vercel.app"]}},
     supports_credentials=False,
 )
 

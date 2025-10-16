@@ -130,29 +130,42 @@ class student_handler():
         'message': 'unrecognized',
         'distance': float(distance)}), 400)
     
-    #get session infomation
-    def get_session_information_handler(self, id):
+    #get session infomation by student_id
+    def get_session_information_handler(self, id, startdate):
         self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
         self.con.row_factory = sqlite3.Row
         self.cur = self.con.cursor()
-        query = f"""
+        query = """
             SELECT 
-                a.status,
-                a.checkin_time,
-                t.name,
-                s.title,
-                s.startdate,
-                s.enddate
-            FROM attendance a
-            JOIN sessions s ON a.session_id = s.id
-            JOIN teachers t ON s.teacher_id = t.id
-            WHERE a.student_id = {id}"""
-        self.cur.execute(query)
+            a.status,
+            a.checkin_time,
+            t.name AS teacher_name,
+            s.title,
+            s.startdate,
+            s.enddate
+        FROM attendance a
+        JOIN sessions s ON a.session_id = s.id
+        JOIN teachers t ON s.teacher_id = t.id
+        WHERE a.student_id = ? AND DATE(s.startdate) = ?"""
+
+        self.cur.execute(query, (id, startdate))
         result = [dict(row) for row in self.cur.fetchall()]
         self.con.close()
+
         return make_response(jsonify(result))
+    
+    #get student information by student_id
+    def get_student_information_handler(self, id):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
 
+        query = f"Select id, name, email, password from students where id = {id}"
+        self.cur.execute(query)
+        student = self.cur.fetchone()
 
-
-
-
+        if student:
+            student_result = dict(student)
+            return make_response(jsonify(student_result), 200)
+        else:
+            return make_response(jsonify({"message": f"Can not find student with {id}"}), 404)

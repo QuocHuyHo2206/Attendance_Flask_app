@@ -138,15 +138,14 @@ class teacher_handler():
         return make_response(jsonify(result), 200)
     
     #get all session
-    def get_all_session_handler(self):
+    def get_all_session_handler(self, startdate):
         self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
         self.con.row_factory = sqlite3.Row
         self.cur = self.con.cursor()
 
-        query = "Select * from sessions"
-        self.cur.execute(query)
+        query = "SELECT * FROM sessions WHERE DATE(startdate) = ? ORDER BY startdate ASC"
+        self.cur.execute(query, (startdate,))
         list_of_session = [dict(row) for row in self.cur.fetchall()]
-
 
         for session in list_of_session:
             session_id = session['id']
