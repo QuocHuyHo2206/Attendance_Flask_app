@@ -28,10 +28,14 @@ class student_handler():
         self.con.close()
         if student:
             student_id = student[0]
+            student_name = student[1]
+            student_email = student[2]
             return make_response(jsonify({
-            "message": "login successfully",
-            "student_id": student_id
-        }), 200)
+                "message": "login successfully",
+                "student_id": student_id,
+                "student_name": student_name,
+                "student_email": student_email
+            }), 200)
 
         else:
             return make_response(jsonify({"message":"login fail"}), 404)
