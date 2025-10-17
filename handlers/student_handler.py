@@ -94,7 +94,7 @@ class student_handler():
 
             if results[0]:
                 session_id = data.form['session_id']
-                student_id = item[0]
+                student_id = data.form['student_id']
 
                 self.cur.execute(
                     f"SELECT status, checkin_time FROM attendance WHERE session_id = {session_id} AND student_id = {student_id}")
