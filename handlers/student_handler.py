@@ -81,54 +81,57 @@ class student_handler():
         img = face_recognition.load_image_file(file)
         encodings = face_recognition.face_encodings(img)
         if len(encodings) == 0:
+            self.con.close()
             return make_response(jsonify({"message": "unrecognized"}), 400)
+        
         attendance_encoding = encodings[0]
+        student_id = data.form['student_id']
+        session_id = data.form['session_id']
 
-        self.cur.execute('SELECT id, encoding FROM students')
-        users = self.cur.fetchall()
+        self.cur.execute("SELECT id, encoding FROM students WHERE id = ?", (student_id,))
+        student = self.cur.fetchone()
+        if not student:
+            self.con.close()
+            return make_response(jsonify({"message": "student not found"}), 404)
 
-        for item in users:
-            known_encoding = np.frombuffer(item[1], dtype=np.float64)
-            results = face_recognition.compare_faces([known_encoding], attendance_encoding, tolerance=0.5)
-            distance = face_recognition.face_distance([known_encoding], attendance_encoding)[0]
+        known_encoding = np.frombuffer(student['encoding'], dtype=np.float64)
+        distance = face_recognition.face_distance([known_encoding], attendance_encoding)[0]
 
-            if results[0]:
-                session_id = data.form['session_id']
-                student_id = data.form['student_id']
+        if distance < 0.5:
+            self.cur.execute(
+                "SELECT status, checkin_time FROM attendance WHERE session_id = ? AND student_id = ?", (session_id, student_id))
+            existing = self.cur.fetchone()
 
-                self.cur.execute(
-                    f"SELECT status, checkin_time FROM attendance WHERE session_id = {session_id} AND student_id = {student_id}")
-                existing = self.cur.fetchone()
-
-                if existing:
-                    if existing['status'] == 'present':
-                        self.con.close()
-                        return make_response(jsonify({
+            if existing:
+                if existing['status'] == 'present':
+                    self.con.close()
+                    return make_response(jsonify({
                         'message': 'already checked in',
                         'distance': float(distance),
                         'checkin_time': existing['checkin_time']}), 200)
-                    else:
-                        checkin_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        self.cur.execute(
-                        f"UPDATE attendance SET status = 'present', checkin_time = '{checkin_time}' "
-                        f"WHERE session_id = {session_id} AND student_id = {student_id}")
-                        self.con.commit()
-                        self.con.close()
-                        return make_response(jsonify({
+                else:
+                    checkin_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    self.cur.execute(
+                        "UPDATE attendance SET status = 'present', checkin_time = ? WHERE session_id = ? AND student_id = ?",
+                        (checkin_time, session_id, student_id))
+                    self.con.commit()
+                    self.con.close()
+                    return make_response(jsonify({
                         'message': 'recognized',
                         'distance': float(distance),
                         'checkin_time': checkin_time}), 200)
-                    
-                else:
-                    self.con.close()
-                    return make_response(jsonify({
-                    'message': 'attendance record not found',
-                    'student_id': student_id,
-                    'session_id': session_id}), 404)
+            else:
+                self.con.close()
+                return make_response(jsonify({
+                'message': 'attendance record not found',
+                'student_id': student_id,
+                'session_id': session_id}), 404)
 
+        self.con.close()
         return make_response(jsonify({
-        'message': 'unrecognized',
-        'distance': float(distance)}), 400)
+            'message': 'unrecognized',
+            'distance': float(distance)}), 400)
+
     
     #get session infomation by student_id
     def get_session_information_handler(self, id, startdate):
