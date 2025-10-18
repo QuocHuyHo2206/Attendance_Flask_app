@@ -207,6 +207,8 @@ class teacher_handler():
                 percentage_of_attendance = 0
 
             session['percentage_of_attendance'] = round(percentage_of_attendance, 1)
+            session['num_present'] = num_present
+            session['num_absent'] = num_absent
             
         self.con.close()
         return make_response(jsonify({"payload": list_of_session}), 200)
@@ -288,3 +290,24 @@ class teacher_handler():
         }
 
         return make_response(jsonify({"payload": payload}), 200)
+    
+    #delete session by id
+    def delete_session_by_id_handler(self, id):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        self.cur.execute(f"Select id from sessions where id = {id}")
+        session_id = self.cur.fetchone()
+
+        if not session_id:
+            return make_response(jsonify({"message": f"Can not find session with {id}"}), 404)
+        
+        self.cur.execute("DELETE FROM attendance WHERE session_id = ?", (session_id['id'],))
+        self.cur.execute("DELETE FROM sessions WHERE id = ?", (session_id['id'],))
+
+        self.con.commit()
+        self.con.close()
+
+        return make_response(jsonify({"message": f"Session deleted successfully"}), 200)
+

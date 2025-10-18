@@ -39,3 +39,7 @@ def get_teacher_information_endpoint(id):
 @app.route("/api/teacher/getsessionattendancestatus/<id>")
 def get_session_attendance_status_endpoint(id):
     return tea.get_session_attendance_status_handler(id)
+
+@app.route("/api/teacher/deletesession/<id>", methods=['DELETE'])
+def delete_session_by_id_endpoint(id):
+    return tea.delete_session_by_id_handler(id)
