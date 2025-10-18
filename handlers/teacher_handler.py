@@ -133,9 +133,47 @@ class teacher_handler():
 
         query = "Select id, name, email from students"
         self.cur.execute(query)
-        result = [dict(row) for row in self.cur.fetchall()]
+        students = self.cur.fetchall()
+
+        self.cur.execute("Select * from attendance")
+        attendances = self.cur.fetchall()
+
+        result = list()
+        high_attendance_count = 0
+        low_attendance_count = 0
+
+        for item in students:
+            stu_id = item['id']
+            num_present = 0
+            total_sessions = 0
+            for atd in attendances:
+                if atd['student_id'] == stu_id:
+                    total_sessions += 1
+                    if atd["status"].lower() == "present":
+                        num_present += 1
+            
+            attendance_rate = (num_present / total_sessions) * 100 if total_sessions > 0 else 0
+
+            if attendance_rate >= 90: high_attendance_count += 1
+            elif attendance_rate < 80: low_attendance_count += 1
+
+            result.append({
+                "id": item["id"],
+                "name": item["name"],
+                "email": item["email"],
+                "number_of_present": num_present,
+                "total_attendance_sessions": total_sessions,
+                "attendance_rate": round(attendance_rate, 1)})
+            
+        payload = {
+            "list_of_student" : result,
+            "high_attendance" : high_attendance_count,
+            "need_attention" : low_attendance_count
+        }
+
+        #result = [dict(row) for row in self.cur.fetchall()]
         self.con.close()
-        return make_response(jsonify(result), 200)
+        return make_response(jsonify(payload), 200)
     
     #get all session
     def get_all_session_handler(self, startdate):
@@ -171,7 +209,6 @@ class teacher_handler():
             session['percentage_of_attendance'] = round(percentage_of_attendance, 1)
             
         self.con.close()
-
         return make_response(jsonify({"payload": list_of_session}), 200)
 
     
@@ -190,7 +227,62 @@ class teacher_handler():
         for item in statuses:
             if item['status'] == 'present':
                 num_present += 1
-            else:
+            elif item['status'] == 'absent':
                 num_absent += 1
-        return make_response(jsonify({'num_present': num_present, 'num_absent': num_absent}))
+        return make_response(jsonify({
+            'num_present': num_present, 
+            'num_absent': num_absent, 
+            'number_of_students': (num_present + num_absent)}))
     
+    #get teacher information by id
+    def get_teacher_information_handler(self, id):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        query = f"Select id, name, email, password from teachers where id = {id}"
+        self.cur.execute(query)
+        teacher = self.cur.fetchone()
+
+        if teacher:
+            teacher_result = dict(teacher)
+            return make_response(jsonify(teacher_result), 200)
+        else:
+            return make_response(jsonify({"message": f"Can not find teacher with {id}"}), 404)
+        
+    # get session attendance status by session id
+    def get_session_attendance_status_handler(self, id):
+        self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
+
+        self.cur.execute(f"Select * from sessions where id = {id}")
+        session = self.cur.fetchone()
+        if not session: 
+            return make_response(jsonify({"message" : f"Can not find session with {id}"}), 404)
+        
+        result = list()
+        number_of_student = session["numberofstudent"]
+        if number_of_student == 0:
+            return make_response(jsonify({
+                "message" : f"Please add student to session",
+                "number_of_student": number_of_student}), 200)
+
+        query = f"Select student_id, status from attendance where session_id = {session['id']}"
+        self.cur.execute(query)
+        temp_list = self.cur.fetchall()
+
+        for item in temp_list:
+            self.cur.execute(f"Select id, name, email from students where id = {item['student_id']}")
+            stu = self.cur.fetchone()
+            result.append({
+                "student_id": stu["id"],
+                "student_name": stu["name"],
+                "status": item["status"]})
+            
+        payload = {
+            "number_of_student": number_of_student,
+            "student_attendance_status": result
+        }
+
+        return make_response(jsonify({"payload": payload}), 200)

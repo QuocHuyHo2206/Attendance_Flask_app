@@ -31,3 +31,11 @@ def get_all_session_endpoint(startdate):
 @app.route("/api/teacher/getnumstufollowedcategories/<id>", methods=['GET'])
 def get_num_stu_followed_categories_endpoint(id):
     return tea.get_num_stu_followed_categories_endpoint(id)
+
+@app.route("/api/teacher/getteacherinformation/<id>")
+def get_teacher_information_endpoint(id):
+    return tea.get_teacher_information_handler(id)
+
+@app.route("/api/teacher/getsessionattendancestatus/<id>")
+def get_session_attendance_status_endpoint(id):
+    return tea.get_session_attendance_status_handler(id)
