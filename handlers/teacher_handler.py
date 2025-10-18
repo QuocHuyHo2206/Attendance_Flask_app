@@ -268,7 +268,7 @@ class teacher_handler():
                 "message" : f"Please add student to session",
                 "number_of_student": number_of_student}), 200)
 
-        query = f"Select student_id, status from attendance where session_id = {session['id']}"
+        query = f"Select student_id, status, checkin_time from attendance where session_id = {session['id']}"
         self.cur.execute(query)
         temp_list = self.cur.fetchall()
 
@@ -278,7 +278,9 @@ class teacher_handler():
             result.append({
                 "student_id": stu["id"],
                 "student_name": stu["name"],
-                "status": item["status"]})
+                "status": item["status"],
+                "checkin_time": item["checkin_time"]
+            })
             
         payload = {
             "number_of_student": number_of_student,
