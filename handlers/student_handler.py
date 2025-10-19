@@ -143,6 +143,7 @@ class student_handler():
             a.status,
             a.checkin_time,
             t.name AS teacher_name,
+            s.id AS session_id,
             s.title,
             s.startdate,
             s.enddate
