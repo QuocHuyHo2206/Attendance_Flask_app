@@ -93,26 +93,26 @@ class teacher_handler():
 
     def add_student_to_session_handler(self, data):
         try:
-            con = sqlite3.connect('attendance_app.db', check_same_thread=False)
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
+            self.con = sqlite3.connect('attendance_app.db', check_same_thread=False)
+            self.con.row_factory = sqlite3.Row
+            self.cur = self.con.cursor()
 
-            cur.execute(
+            self.cur.execute(
             "SELECT 1 FROM attendance WHERE session_id = ? AND student_id = ?",
             (data['session_id'], data['student_id']))   
 
-            if cur.fetchone():
+            if self.cur.fetchone():
                 return make_response(jsonify({"error": "Student already added to this session"}), 400)
 
-            cur.execute(
+            self.cur.execute(
             "INSERT INTO attendance(session_id, student_id, status, checkin_time) VALUES (?, ?, 'absent', NULL)",
             (data['session_id'], data['student_id']))
 
-            cur.execute(
+            self.cur.execute(
             "UPDATE sessions SET numberofstudent = COALESCE(numberofstudent, 0) + 1 WHERE id = ?",
             (data['session_id'],))
 
-            con.commit()
+            self.con.commit()
             return make_response(jsonify({"message": "add student successfully"}), 200)
 
         except sqlite3.OperationalError as e:
@@ -121,7 +121,7 @@ class teacher_handler():
 
         finally:
             try:
-                con.close()
+                self.con.close()
             except:
                 pass
     

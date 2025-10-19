@@ -52,12 +52,12 @@ class student_handler():
         password = data.form['password']
         file = data.files['image']
 
-        ext = os.path.splitext(file.filename)[1]
-        image_path = os.path.join('images', f'{name}{ext}')
+        ext = os.path.splitext(file.filename)[1] #file.filename trả về tên gốc của thư mục, hàm splitext tách phần tên và phần mở rộng
+        image_path = os.path.join('images', f'{name}{ext}') #join đảm bảo đường dẫn đúng định dạng
         file.save(image_path)
 
-        image = face_recognition.load_image_file(image_path)
-        encodings = face_recognition.face_encodings(image)
+        image = face_recognition.load_image_file(image_path) #numPy array
+        encodings = face_recognition.face_encodings(image) # vector encoding list (128 float value/value)
         if len(encodings) == 0:
             return make_response({"error": "unrecognized"}, 400)
         
