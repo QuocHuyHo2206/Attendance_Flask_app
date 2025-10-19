@@ -245,6 +245,7 @@ class teacher_handler():
         query = f"Select id, name, email, password from teachers where id = {id}"
         self.cur.execute(query)
         teacher = self.cur.fetchone()
+        self.con.close()
 
         if teacher:
             teacher_result = dict(teacher)
@@ -284,6 +285,8 @@ class teacher_handler():
                 "checkin_time": item["checkin_time"]
             })
             
+        self.con.close()
+
         payload = {
             "number_of_student": number_of_student,
             "student_attendance_status": result

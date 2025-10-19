@@ -52,7 +52,7 @@ class student_handler():
         password = data.form['password']
         file = data.files['image']
 
-        ext = os.path.splitext(file.filename)[1] #file.filename trả về tên gốc của thư mục, hàm splitext tách phần tên và phần mở rộng
+        ext = os.path.splitext(file.filename)[1] #file.filename trả về tên gốc của file, hàm splitext tách phần tên và phần mở rộng
         image_path = os.path.join('images', f'{name}{ext}') #join đảm bảo đường dẫn đúng định dạng
         file.save(image_path)
 
@@ -166,6 +166,7 @@ class student_handler():
         query = f"Select id, name, email, password from students where id = {id}"
         self.cur.execute(query)
         student = self.cur.fetchone()
+        self.con.close()
 
         if student:
             student_result = dict(student)
